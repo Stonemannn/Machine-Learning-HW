@@ -1,0 +1,82 @@
+---
+title: "Homework 4"
+author: "Jiayu Shi"
+date: "`r Sys.Date()`"
+output: github_document
+---
+
+```{r}
+## install.packages("caret")
+
+library('MASS') ## for 'mcycle'
+library('manipulate') ## for 'manipulate'
+# Load the caret package
+
+library(caret)
+```
+
+```{r}
+mcycle
+y <- mcycle$accel
+x <- matrix(mcycle$times, length(mcycle$times), 1)
+
+plot(x, y, xlab="Time (ms)", ylab="Acceleration (g)")
+```
+
+## Randomly split the mcycle data into training (75%) and validation (25%) subsets.
+
+```{r}
+data(mcycle)
+# Split the data into training and test sets
+set.seed(123) # Set seed for reproducibility
+trainIndex <- createDataPartition(mcycle$times, p = 0.75, list = FALSE)
+train <- mcycle[trainIndex, ]
+test <- mcycle[-trainIndex, ]
+```
+
+
+```{r}
+## Epanechnikov kernel function
+## x  - n x p matrix of training inputs
+## x0 - 1 x p input where to make prediction
+## lambda - bandwidth (neighborhood size)
+kernel_epanechnikov <- function(x, x0, lambda=1) {
+  d <- function(t)
+    ifelse(abs(t) <= 1, 3/4*(1-t^2), 0)
+  z <- t(t(x) - x0)
+  d(sqrt(rowSums(z*z))/lambda)
+}
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
