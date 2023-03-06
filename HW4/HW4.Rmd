@@ -206,7 +206,7 @@ points(1:20, training_error_plot,col="blue")
 ```{r}
 ## 5-fold cross-validation of knnreg model
 ## create five folds
-set.seed(1985)
+set.seed(99)
 fold  <- createFolds(mcycle$accel, k=5)
 print(fold)
 sapply(fold, length)  ## not all the same length
@@ -214,21 +214,21 @@ sapply(fold, length)  ## not all the same length
 
 
 ```{r}
-cvknnreg <- function(kNN = 10, flds=fold) {
+cvknnreg <- function(kNN, flds=fold) {
   cverr <- rep(NA, length(flds))
-  for(tst_idx in 1:length(flds)) { ## for each fold
+  for(test_idx in 1:length(flds)) { ## for each fold
     
     ## get training and testing data
-    mcycle_trn <- mcycle[-flds[[tst_idx]],]
-    mcycle_tst <- mcycle[ flds[[tst_idx]],]
+    mcycle_train <- mcycle[-flds[[test_idx]],]
+    mcycle_test <- mcycle[ flds[[test_idx]],]
     
     ## fit kNN model to training data
     knn_fit <- knnreg(accel ~ times,
-                      k=kNN, data=mcycle)
+                      k=kNN, data=mcycle_train)
     
     ## compute test error on testing data
-    pre_tst <- predict(knn_fit, mcycle_tst)
-    cverr[tst_idx] <- mean((mcycle_tst$Income - pre_tst)^2)
+    pre_test <- predict(knn_fit, mcycle_test)
+    cverr[test_idx] <- mean((mcycle_test$accel - pre_test)^2)
   }
   return(cverr)
 }
@@ -245,7 +245,7 @@ cverrs_sd   <- apply(cverrs, 2, sd)
 ```{r}
 ## Plot the results of 5-fold CV for kNN = 1:20
 plot(x=1:20, y=cverrs_mean, 
-     ylim=c(200,1000),
+     ylim=range(cverrs),
      xlab="'k' in kNN", ylab="CV Estimate of Test Error")
 segments(x0=1:20, x1=1:20,
          y0=cverrs_mean-cverrs_sd,
@@ -260,19 +260,7 @@ abline(h=cverrs_mean[best_idx] + cverrs_sd[best_idx], lty=3)
 
 # Interpret the resulting figures and select a suitable value for the tuning parameter.
 
-The least complex model within one standard error of the best is chosen. The suitable value for tuning parameter is 18.
-
-
-
-
-
-
-
-
-
-
-
-
+The least complex model within one standard error of the best is chosen. The suitable value for tuning parameter is 20.
 
 
 

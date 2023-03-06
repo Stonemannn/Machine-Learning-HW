@@ -354,54 +354,54 @@ points(1:20, training_error_plot,col="blue")
 ``` r
 ## 5-fold cross-validation of knnreg model
 ## create five folds
-set.seed(1985)
+set.seed(99)
 fold  <- createFolds(mcycle$accel, k=5)
 print(fold)
 ```
 
     ## $Fold1
-    ##  [1]   8  21  25  26  28  31  35  39  41  42  65  69  71  73  77  80  88  98 101
-    ## [20] 102 108 109 116 128 129 130
+    ##  [1]  12  13  17  21  23  40  43  55  58  62  63  66  73  75  77  79  84 100 102
+    ## [20] 107 108 115 116 120 122 124 125 126
     ## 
     ## $Fold2
-    ##  [1]  11  12  15  16  17  23  32  44  47  49  51  55  57  68  75  79  82  90  92
-    ## [20]  99 107 110 113 117 119 121 123 125
+    ##  [1]   1   4  18  19  22  26  27  28  29  32  33  46  50  54  60  64  65  81  89
+    ## [20]  93  95  98 118 123 130 131
     ## 
     ## $Fold3
-    ##  [1]   2  10  18  19  34  36  38  45  46  50  54  58  63  64  81  84  85  86  87
-    ## [20]  89  93  97 115 118 124 132
+    ##  [1]   5  10  16  25  31  36  37  47  48  53  69  70  72  78  83  85  87  91  92
+    ## [20] 103 105 121 127 128 132
     ## 
     ## $Fold4
-    ##  [1]   3   6   7  14  20  24  27  29  33  40  43  48  56  59  60  66  74  78  91
-    ## [20]  94  96 104 106 122 126 127 131
+    ##  [1]   3   7   9  11  14  15  20  30  35  39  41  45  49  59  61  67  68  71  82
+    ## [20]  88  90  94  99 104 106 110 119
     ## 
     ## $Fold5
-    ##  [1]   1   4   5   9  13  22  30  37  52  53  61  62  67  70  72  76  83  95 100
-    ## [20] 103 105 111 112 114 120 133
+    ##  [1]   2   6   8  24  34  38  42  44  51  52  56  57  74  76  80  86  96  97 101
+    ## [20] 109 111 112 113 114 117 129 133
 
 ``` r
 sapply(fold, length)  ## not all the same length
 ```
 
     ## Fold1 Fold2 Fold3 Fold4 Fold5 
-    ##    26    28    26    27    26
+    ##    28    26    25    27    27
 
 ``` r
-cvknnreg <- function(kNN = 10, flds=fold) {
+cvknnreg <- function(kNN, flds=fold) {
   cverr <- rep(NA, length(flds))
-  for(tst_idx in 1:length(flds)) { ## for each fold
+  for(test_idx in 1:length(flds)) { ## for each fold
     
     ## get training and testing data
-    mcycle_trn <- mcycle[-flds[[tst_idx]],]
-    mcycle_tst <- mcycle[ flds[[tst_idx]],]
+    mcycle_train <- mcycle[-flds[[test_idx]],]
+    mcycle_test <- mcycle[ flds[[test_idx]],]
     
     ## fit kNN model to training data
     knn_fit <- knnreg(accel ~ times,
-                      k=kNN, data=mcycle)
+                      k=kNN, data=mcycle_train)
     
     ## compute test error on testing data
-    pre_tst <- predict(knn_fit, mcycle_tst)
-    cverr[tst_idx] <- mean((mcycle_tst$Income - pre_tst)^2)
+    pre_test <- predict(knn_fit, mcycle_test)
+    cverr[test_idx] <- mean((mcycle_test$accel - pre_test)^2)
   }
   return(cverr)
 }
@@ -410,18 +410,24 @@ cverrs <- sapply(1:20, cvknnreg)
 print(cverrs) ## rows are k-folds (1:5), cols are kNN (1:20)
 ```
 
-    ##      [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10] [,11] [,12] [,13] [,14]
-    ## [1,]  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN   NaN   NaN   NaN   NaN   NaN
-    ## [2,]  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN   NaN   NaN   NaN   NaN   NaN
-    ## [3,]  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN   NaN   NaN   NaN   NaN   NaN
-    ## [4,]  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN   NaN   NaN   NaN   NaN   NaN
-    ## [5,]  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN  NaN   NaN   NaN   NaN   NaN   NaN
-    ##      [,15] [,16] [,17] [,18] [,19] [,20]
-    ## [1,]   NaN   NaN   NaN   NaN   NaN   NaN
-    ## [2,]   NaN   NaN   NaN   NaN   NaN   NaN
-    ## [3,]   NaN   NaN   NaN   NaN   NaN   NaN
-    ## [4,]   NaN   NaN   NaN   NaN   NaN   NaN
-    ## [5,]   NaN   NaN   NaN   NaN   NaN   NaN
+    ##           [,1]      [,2]      [,3]      [,4]     [,5]     [,6]     [,7]
+    ## [1,] 1767.7360 1321.0338 1076.9306 1049.8063 995.4468 868.2589 923.4972
+    ## [2,]  633.4279  472.0304  394.3057  373.0921 360.7330 428.8437 412.9679
+    ## [3,] 1333.6291 1073.4456 1020.2305  885.3768 783.6891 744.3886 727.8425
+    ## [4,]  873.3062  750.9263  552.2779  401.5632 465.0125 478.6303 471.0138
+    ## [5,]  677.6204  294.2975  477.0239  518.8134 514.1729 462.2819 449.7690
+    ##          [,8]     [,9]    [,10]    [,11]    [,12]    [,13]    [,14]    [,15]
+    ## [1,] 902.2311 879.2123 839.9313 879.7281 872.8695 887.8724 834.0756 829.3594
+    ## [2,] 417.9850 400.7601 451.1730 477.8807 502.3134 506.8410 508.5500 529.8898
+    ## [3,] 703.7470 722.5084 654.1056 630.2972 649.3787 616.9251 631.4310 688.6964
+    ## [4,] 479.2291 546.8360 586.7075 585.9919 582.1757 558.6090 566.8790 561.7893
+    ## [5,] 449.2712 434.4999 440.2326 482.6187 468.3779 513.1676 498.6039 484.0651
+    ##         [,16]    [,17]    [,18]    [,19]    [,20]
+    ## [1,] 844.9761 812.5574 796.5548 775.3552 782.0553
+    ## [2,] 585.2893 613.7561 626.8228 713.3462 744.0627
+    ## [3,] 711.5149 700.8637 748.2415 714.1435 721.7608
+    ## [4,] 557.4319 573.3798 632.4241 666.3994 683.8638
+    ## [5,] 523.4649 531.6988 522.6252 550.2690 534.0860
 
 ``` r
 cverrs_mean <- apply(cverrs, 2, mean)
@@ -433,7 +439,7 @@ cverrs_sd   <- apply(cverrs, 2, sd)
 ``` r
 ## Plot the results of 5-fold CV for kNN = 1:20
 plot(x=1:20, y=cverrs_mean, 
-     ylim=c(200,1000),
+     ylim=range(cverrs),
      xlab="'k' in kNN", ylab="CV Estimate of Test Error")
 segments(x0=1:20, x1=1:20,
          y0=cverrs_mean-cverrs_sd,
@@ -448,4 +454,4 @@ abline(h=cverrs_mean[best_idx] + cverrs_sd[best_idx], lty=3)
 # Interpret the resulting figures and select a suitable value for the tuning parameter.
 
 The least complex model within one standard error of the best is chosen.
-The suitable value for tuning parameter is 18.
+The suitable value for tuning parameter is 20.
