@@ -1,0 +1,155 @@
+---
+title: "HW5"
+author: "Jiayu Shi"
+output: github_document
+---
+
+```{r}
+# install.packages("xgboost")
+# install.packages("caret")
+```
+
+# Xgboost
+
+```{r}
+library(xgboost)
+library(caret)
+```
+
+## Load the data and preprocess it:
+
+```{r}
+# Load the data
+train_data <- read.table("vowel.train.txt", header = TRUE, sep = ",")
+test_data <- read.table("vowel.test.txt", header = TRUE, sep = ",")
+
+# Split the features and labels
+train_features <- train_data[, 3:ncol(train_data)]
+train_labels <- train_data[, 2]
+
+test_features <- test_data[, 3:ncol(test_data)]
+test_labels <- test_data[, 2]
+
+# Convert to xgb.DMatrix format
+dtrain <- xgb.DMatrix(data = as.matrix(train_features), label = train_labels - 1)
+# to convert the class labels to a zero-based indexing system. XGBoost expects the class labels to start from 0, 
+dtest <- xgb.DMatrix(data = as.matrix(test_features), label = test_labels - 1)
+
+```
+
+## Fit a gradient boosted model to the “vowel.train” data using all of the 10 features with default values of the tuning parameters:
+
+```{r}
+params <- list(
+  objective = "multi:softprob",
+  num_class = length(unique(train_labels)),
+  eval_metric = "merror"
+)
+
+xgb_model <- xgb.train(
+  params = params,
+  data = dtrain,
+  nrounds = 10,
+  watchlist = list(train = dtrain),
+  print_every_n = 1
+)
+```
+
+
+## Use 5-fold CV to tune the ensemble size:
+
+```{r}
+cv_results <- xgb.cv(
+  params = params,
+  data = dtrain,
+  nrounds = 20,
+  nfold = 5,
+  print_every_n = 1,
+  early_stopping_rounds = 1,
+  maximize = FALSE
+)
+
+# Optimal number of rounds
+optimal_nrounds <- cv_results$best_iteration
+print(optimal_nrounds)
+```
+
+## With the tuned model, make predictions using the majority vote method, and compute the misclassification rate using the vowel.test data:
+
+```{r}
+# Train the model with the optimal number of rounds
+xgb_tuned_model <- xgb.train(
+  params = params,
+  data = dtrain,
+  nrounds = optimal_nrounds,
+  watchlist = list(train = dtrain),
+  print_every_n = 1
+)
+```
+
+
+```{r}
+# Make predictions
+test_pred_probs <- predict(xgb_tuned_model, dtest)
+test_pred <- matrix(test_pred_probs, ncol = length(unique(train_labels)), byrow = TRUE)
+test_pred_class <- max.col(test_pred)
+
+# Compute the misclassification rate
+misclassification_rate <- mean(test_pred_class != (test_labels))
+cat("Misclassification rate:", misclassification_rate, "\n")
+
+
+```
+
+
+# Random Forest
+```{r}
+# install.packages("randomForest")
+```
+
+```{r}
+library(randomForest)
+```
+## Fit a random forest model to the “vowel.train” data using all of the 11 features with default values of the tuning parameters:
+
+```{r}
+rf_model <- randomForest(x = train_features, y = train_labels)
+```
+
+## Use 5-fold CV to tune the number of variables randomly sampled as candidates at each split:
+
+```{r}
+# Set up cross-validation
+cv_control <- trainControl(method = "cv", number = 5)
+
+# Tune the model
+tune_grid <- expand.grid(.mtry = seq(1, ncol(train_features), 1)) # Try all values from 1 to the number of features
+
+tuned_rf_model <- train(
+  x = train_features,
+  y = train_labels,
+  method = "rf",
+  trControl = cv_control,
+  tuneGrid = tune_grid
+)
+
+# Optimal mtry
+optimal_mtry <- tuned_rf_model$bestTune$mtry
+print(optimal_mtry)
+```
+
+## With the tuned model, make predictions using the majority vote method, and compute the misclassification rate using the vowel.test data:
+
+```{r}
+# Train the random forest model with the optimal mtry
+rf_tuned_model <- randomForest(x = train_features, y = train_labels, mtry = optimal_mtry)
+
+# Make predictions
+test_pred_class <- predict(rf_tuned_model, test_features)
+
+# Compute the misclassification rate
+misclassification_rate <- mean(test_pred_class != test_labels)
+cat("Misclassification rate:", misclassification_rate, "\n")
+
+```
+
