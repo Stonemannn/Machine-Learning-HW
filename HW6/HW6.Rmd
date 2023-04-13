@@ -1,0 +1,77 @@
+---
+title: "HW6"
+author: "Jiayu Shi"
+date: "`r Sys.Date()`"
+output: github_document
+---
+
+```{r}
+# install.packages("keras")
+```
+
+```{r}
+# install_tensorflow()
+```
+
+```{r}
+library(tensorflow)
+library(keras)
+library(reticulate)
+library(tidyr)
+library(ggplot2)
+```
+
+```{r}
+# Set the path to the zip.train file
+path_to_zip_train <- "/Users/stoneman/Library/CloudStorage/OneDrive-Vanderbilt/Machine\ Learning/Machine-Learning-HW/HW6/zip.train"
+
+# Read in the file using read.table
+train_data  <- read.table(path_to_zip_train, header = FALSE)
+
+# View the first few rows of the dataset
+head(train_data)
+```
+
+```{r}
+train_labels <- train_data$V1
+train_pixels <- as.matrix(train_data[, -1])
+train_images <- array_reshape(train_pixels, c(nrow(train_pixels), 16, 16, 1))
+```
+
+
+```{r}
+# Define the model architecture
+input_shape <- c(16, 16, 1)
+# Create a custom shared convolutional layer
+shared_conv_layer <- layer_conv_2d(filters = 2, kernel_size = c(8, 8), padding = "same", activation = "relu", input_shape = input_shape)
+
+# Define the model architecture
+input <- layer_input(shape = input_shape, name = "Input")
+x1 <- shared_conv_layer(input)
+x2 <- shared_conv_layer(input)
+merged <- layer_add(list(x1, x2))
+conv2 <- layer_conv_2d(filters = 4, kernel_size = c(4, 4), padding = "same", activation = "relu", name = "Conv_Layer_2")(merged)
+flat <- layer_flatten()(conv2)
+output <- layer_dense(units = 10, activation = 'softmax', name = "Output_Layer")(flat)
+
+# Create the model
+model <- keras_model(inputs = input, outputs = output)
+
+# Compile the model
+model %>% compile(
+  loss = 'sparse_categorical_crossentropy',
+  optimizer = optimizer_rmsprop(lr = 0.001),
+  metrics = c('accuracy')
+)
+
+# Train the model
+history <- model %>% fit(
+  train_images, train_labels,
+  epochs = 10,
+  batch_size = 32,
+  validation_split = 0.2
+)
+# Plot the training history
+plot(history)
+```
+
